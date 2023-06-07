@@ -94,11 +94,10 @@ export interface Foto {
 Em foto.service.ts
 
 import { Injectable } from '@angular/core';
-
-import {Camera, CameraResultType, CameraSource, Photo, } from '@capacitor/camera';
+import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
-import { Foto } from '../models/foto.interface';
+import { Foto } from '../models/Foto.interface';
 import { Platform } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 
@@ -137,7 +136,7 @@ export class FotoService {
     const fotoCapturada = await Camera.getPhoto({
       resultType: CameraResultType.Uri, // dados baseados em arquivos; oferece o melhor desempenho
       source: CameraSource.Camera, // tirar automaticamente uma nova foto com a câmera
-      quality: 100,
+      quality: 50, // Deixar em 50 para não gerar um arquivo muito grande em cameras boas.
     });
 
     const salvarArquivoFoto = await this.salvarFoto(fotoCapturada);
@@ -232,3 +231,77 @@ export class FotoService {
 }
 
 -----------------------------------------------------------------------------------
+Em home.page.ts
+
+import { Component } from '@angular/core';
+import { FotoService } from '../services/foto.service';
+import { Foto } from '../models/Foto.service';
+import { ActionSheetController } from '@ionic/angular';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: 'home.page.html',
+  styleUrls: ['home.page.scss'],
+})
+export class HomePage {
+  constructor(public fotoService: FotoService, public actionSheetController: ActionSheetController) { }
+
+  async ngOnInit() {
+    await this.fotoService.carregarFotosSalvas();
+  }
+
+  public async showActionSheet(foto: Foto, position: number) {
+    const actionSheet = await this.actionSheetController.create({
+      header: 'Fotos',
+      buttons: [{
+        text: 'Delete',
+        role: 'destructive',
+        icon: 'trash',
+        handler: () => {
+          this.fotoService.deletePicture(foto, position);
+        }
+      }, {
+        text: 'Cancelar',
+        icon: 'close',
+        role: 'cancel',
+        handler: () => {
+          // Nothing to do, action sheet is automatically closed
+        }
+      }]
+    });
+    await actionSheet.present();
+  }
+  tirarFoto(){
+    this.fotoService.tirarFoto();
+  }
+}
+
+--------------------------------------------------------------------------------------------------
+Em home.page.html
+
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-title>
+      IA do Azure
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-grid>
+    <ion-row>
+      <ion-col size="6" *ngFor="let photo of fotoService.fotos; index as position">
+        <ion-img [src]="photo.webviewPath" (click)="showActionSheet(photo, position)"></ion-img>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="tirarFoto()">
+      <ion-icon name="camera"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+</ion-content>
+
+----------------------------------------------------------------------------------------------------------------------------------

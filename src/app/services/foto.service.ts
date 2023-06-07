@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
-
-import {Camera, CameraResultType, CameraSource, Photo, } from '@capacitor/camera';
+import {Camera, CameraResultType, CameraSource, Photo} from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
-import { Foto } from '../models/foto.interface';
+import { Foto } from '../models/Foto.interface';
 import { Platform } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 
@@ -42,7 +41,7 @@ export class FotoService {
     const fotoCapturada = await Camera.getPhoto({
       resultType: CameraResultType.Uri, // dados baseados em arquivos; oferece o melhor desempenho
       source: CameraSource.Camera, // tirar automaticamente uma nova foto com a câmera
-      quality: 100,
+      quality: 50, // Deixar em 50 para não gerar um arquivo muito grande em cameras boas.
     });
 
     const salvarArquivoFoto = await this.salvarFoto(fotoCapturada);
