@@ -304,4 +304,561 @@ Em home.page.html
 
 </ion-content>
 
+---------------------------------------------------------------------------------------------------------------------------------
+
+Em package.json
+
+{
+  "name": "camapp",
+  "version": "0.0.1",
+  "author": "Ionic Framework",
+  "homepage": "https://ionicframework.com/",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "lint": "ng lint"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^16.0.0",
+    "@angular/common": "^16.0.0",
+    "@angular/compiler": "^16.0.0",
+    "@angular/core": "^16.0.0",
+    "@angular/forms": "^16.0.0",
+    "@angular/platform-browser": "^16.0.0",
+    "@angular/platform-browser-dynamic": "^16.0.0",
+    "@angular/router": "^16.0.0",
+    "@angular/service-worker": "^16.0.0",
+    "@azure/cognitiveservices-computervision": "^8.2.0",
+    "@azure/cognitiveservices-face": "^5.0.0",
+    "@azure/ms-rest-azure-js": "^2.1.0",
+    "@capacitor/camera": "^5.0.2",
+    "@capacitor/filesystem": "^5.0.2",
+    "@capacitor/preferences": "^5.0.2",
+    "@ionic/angular": "^7.0.0",
+    "@ionic/pwa-elements": "^3.1.1",
+    "ionicons": "^7.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.13.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^16.0.0",
+    "@angular-eslint/builder": "^16.0.0",
+    "uuid": "^9.0.0",
+    "@angular-eslint/eslint-plugin": "^16.0.0",
+    "@angular-eslint/eslint-plugin-template": "^16.0.0",
+    "@angular-eslint/schematics": "^16.0.0",
+    "@angular-eslint/template-parser": "^16.0.0",
+    "@angular/cli": "^16.0.0",
+    "@angular/compiler": "^16.0.0",
+    "@angular/compiler-cli": "^16.0.0",
+    "@angular/language-service": "^16.0.0",
+    "@ionic/angular-toolkit": "^9.0.0",
+    "@types/jasmine": "~4.3.0",
+    "@types/node": "^12.11.1",
+    "@typescript-eslint/eslint-plugin": "5.3.0",
+    "@typescript-eslint/parser": "5.3.0",
+    "eslint": "^7.26.0",
+    "eslint-plugin-import": "2.22.1",
+    "eslint-plugin-jsdoc": "30.7.6",
+    "eslint-plugin-prefer-arrow": "1.2.2",
+    "jasmine-core": "~4.6.0",
+    "jasmine-spec-reporter": "~5.0.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-coverage-istanbul-reporter": "~3.0.2",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.0.0",
+    "ts-node": "^8.3.0",
+    "typescript": "~5.0.2"
+  },
+  "description": "An Ionic project"
+}
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+No terminal 
+
+ionic g service services/ai
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Em service ai.service.spec.ts 
+
+import { TestBed } from '@angular/core/testing';
+
+import { AiService } from './ai.service';
+
+describe('AiService', () => {
+  let service: AiService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(AiService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+Em o service ai.service.ts
+
+import { Injectable } from '@angular/core';
+import { ComputerVisionClient } from "@azure/cognitiveservices-computervision";
+import { CognitiveServicesCredentials } from "@azure/ms-rest-azure-js";
+import { FaceClient } from "@azure/cognitiveservices-face";
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AiService {
+
+  private APIKEY = '495d7ed607f143e788698cbd86d38506';
+  private ENDPOINT = 'https://camapp-eduardo.cognitiveservices.azure.com/';
+
+  constructor() { }
+
+  async descreverImagem(foto: Blob) {
+    const cognitiveServiceCredentials = new CognitiveServicesCredentials(this.APIKEY);
+    const client = new ComputerVisionClient(cognitiveServiceCredentials, this.ENDPOINT);
+
+    return await client.describeImageInStream(foto, { language: 'pt' }).then(retorno => {
+      console.log('Descrever Imagem: ', retorno);
+
+      return {
+        descricao: retorno.captions ? retorno.captions[0].text : "",
+        confianca: retorno.captions ? retorno.captions[0].confidence : "",
+        tags: retorno.tags ? retorno.tags : [],
+        tipo: 'descrever'
+      }
+    });
+  }
+
+  async tagsImagem(foto: Blob) {
+    const cognitiveServiceCredentials = new CognitiveServicesCredentials(this.APIKEY);
+    const client = new ComputerVisionClient(cognitiveServiceCredentials, this.ENDPOINT);
+
+    return await client.tagImageInStream(foto, { language: 'pt' }).then(retorno => {
+      console.log('Tags Imagem: ', retorno);
+
+      return {
+        tags: retorno.tags,
+        tipo: 'tags'
+      }
+    });
+  }
+
+  async deteccaoFacial(foto: Blob) {
+    const cognitiveServiceCredentials = new CognitiveServicesCredentials(this.APIKEY);
+    const client = new FaceClient(cognitiveServiceCredentials, this.ENDPOINT);
+
+    return await client.face.detectWithStream(foto,
+      {
+        detectionModel: 'detection_01',
+        recognitionModel: 'recognition_04',
+        returnFaceAttributes: ['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion', 'hair',
+          'makeup', 'occlusion', 'accessories', 'blur', 'exposure', 'qualityForRecognition']
+      }
+    ).then(retorno => {
+      console.log('Detecção de Face: ', retorno);
+
+      return retorno.map(face => ({
+        atributos: face.faceAttributes,
+        posicao: face.faceRectangle,
+      }));
+    });
+  }
+
+
+
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Em ai.service.ts adicionar sua chave do azure em:
+
+private APIKEY = '495d7ed607f143e788698cbd86d38506';
+private ENDPOINT = 'https://camapp-eduardo.cognitiveservices.azure.com/';
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+Em home.page.ts
+
+import { Component, ComponentRef } from '@angular/core';
+import { FotoService } from '../services/foto.service';
+import { Foto } from '../models/Foto.interface';
+import { ActionSheetController, ModalController } from '@ionic/angular';
+import { AiService } from '../services/ai.service';
+import { LoadingController } from '@ionic/angular';
+import { ModalPage } from '../modal/modal.page';
+import { FaceModalPage } from '../face-modal/face-modal.page';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: 'home.page.html',
+  styleUrls: ['home.page.scss'],
+})
+export class HomePage {
+  constructor(
+    public fotoService: FotoService,
+    public actionSheetController: ActionSheetController,
+    public aiService: AiService,
+    private loadingController: LoadingController,
+    public modalController: ModalController
+  ) {}
+
+  async ngOnInit() {
+    await this.fotoService.carregarFotosSalvas();
+  }
+
+  public async showActionSheet(foto: Foto, position: number) {
+    const actionSheet = await this.actionSheetController.create({
+      header: 'Fotos',
+      buttons: [
+        {
+          text: 'Descrever a imagem',
+          icon: 'eye',
+          handler: () => {
+            this.detalhesImagem(foto);
+          },
+        },
+        {
+          text: 'Objetos na Imagem',
+          icon: 'pricetags',
+          handler: () => {
+            this.tagsImagem(foto);
+          },
+        },
+        {
+          text: 'Análise facial',
+          icon: 'person-circle',
+          handler: () => {
+            this.deteccaoFacial(foto);
+          },
+        },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          icon: 'trash',
+          handler: () => {
+            this.fotoService.deletePicture(foto, position);
+          },
+        },
+        {
+          text: 'Cancelar',
+          icon: 'close',
+          role: 'cancel',
+          handler: () => {
+            // Nothing to do, action sheet is automatically closed
+          },
+        },
+      ],
+    });
+    await actionSheet.present();
+  }
+
+  async detalhesImagem(foto: Foto) {
+    const loading = await this.loadingController.create({
+      message: 'Analisando...',
+    });
+    await loading.present();
+
+    const detalhes = await this.aiService.descreverImagem(
+      await this.fotoService.getBlob(foto)
+    );
+
+    console.log(detalhes);
+    await loading.dismiss();
+
+    this.abrirModal(ModalPage, detalhes);
+  }
+
+  async tagsImagem(foto: Foto) {
+    const loading = await this.loadingController.create({
+      message: 'Analisando...',
+    });
+    await loading.present();
+
+    const tags = await this.aiService.tagsImagem(
+      await this.fotoService.getBlob(foto)
+    );
+    console.log(tags);
+    await loading.dismiss();
+    this.abrirModal(ModalPage, tags);
+  }
+
+  async deteccaoFacial(foto: Foto) {
+    const loading = await this.loadingController.create({
+      message: 'Analisando...',
+    });
+    await loading.present();
+
+    const faces = await this.aiService.deteccaoFacial(
+      await this.fotoService.getBlob(foto)
+    );
+    console.log(faces);
+    await loading.dismiss();
+    this.abrirModal(FaceModalPage, faces);
+  }
+
+  async abrirModal(pagina: any, variavel: any) {
+    const modal = await this.modalController.create({
+      component: pagina,
+      componentProps: variavel,
+    });
+    return await modal.present();
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+No  terminal:
+
+ionic g page modal
+
+ionic g page faceModal
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+Em foto.service.ts
+
+import { Injectable } from '@angular/core';
+import {Camera,
+  CameraResultType,
+  CameraSource,
+  Photo} from '@capacitor/camera';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
+import { Foto } from '../models/Foto.interface';
+import { Platform } from '@ionic/angular';
+import { Capacitor } from '@capacitor/core';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class FotoService {
+  fotos: Foto[] = [];
+  private FOTO_ARMAZENAMENTO: string = 'fotos';
+
+  constructor(private platform: Platform) { }
+
+  public async carregarFotosSalvas() {
+    // Recuperar as fotos em cache
+    const listaFotos = await Preferences.get({ key: this.FOTO_ARMAZENAMENTO });
+    this.fotos = JSON.parse(listaFotos.value as string) || [];
+
+    // Se não estiver rodando no navegador...
+    if (!this.platform.is('hybrid')) {
+      // Exibir a foto lendo-a no formato base64
+      for (let foto of this.fotos) {
+        // Ler os dados de cada foto salva no sistema de arquivos
+        const readFile = await Filesystem.readFile({
+          path: foto.filepath,
+          directory: Directory.Data,
+        });
+
+        // Somente na plataforma da Web: Carregar a foto como dados base64
+        foto.webviewPath = `data:image/jpeg;base64,${readFile.data}`;
+      }
+    }
+  }
+
+  public async tirarFoto() {
+    // Take a photo
+    const fotoCapturada = await Camera.getPhoto({
+      resultType: CameraResultType.Uri, // dados baseados em arquivos; oferece o melhor desempenho
+      source: CameraSource.Camera, // tirar automaticamente uma nova foto com a câmera
+      quality: 50, // Deixar em 50 para não gerar um arquivo muito grande em cameras boas.
+    });
+
+    const salvarArquivoFoto = await this.salvarFoto(fotoCapturada);
+
+    // Adicionar nova foto à matriz Fotos
+    this.fotos.unshift(salvarArquivoFoto);
+
+    // Armazenar em cache todos os dados da foto para recuperação futura
+    Preferences.set({
+      key: this.FOTO_ARMAZENAMENTO,
+      value: JSON.stringify(this.fotos),
+    });
+  }
+
+  // Salvar imagem em um arquivo no dispositivo
+  private async salvarFoto(foto: Photo) {
+    // Converta a foto para o formato base64, exigido pela API do sistema de arquivos para salvar
+    const base64Data = await this.readAsBase64(foto);
+
+    // Gravar o arquivo no diretório de dados
+    const nomeArquivo = new Date().getTime() + '.jpeg';
+    const arquivoSalvo = await Filesystem.writeFile({
+      path: nomeArquivo,
+      data: base64Data,
+      directory: Directory.Data,
+    });
+
+    if (this.platform.is('hybrid')) {
+      // Exiba a nova imagem reescrevendo o caminho 'file://' para HTTP
+      // Detalhes: https://ionicframework.com/docs/building/webview#file-protocol
+      return {
+        filepath: arquivoSalvo.uri,
+        webviewPath: Capacitor.convertFileSrc(arquivoSalvo.uri),
+      };
+    } else {
+      // Use o webPath para exibir a nova imagem em vez da base64, pois ela já está carregada na memória
+      return {
+        filepath: nomeArquivo,
+        webviewPath: foto.webPath,
+      };
+    }
+  }
+
+  // Leia a foto da câmera no formato base64 com base na plataforma em que o aplicativo está sendo executado
+  private async readAsBase64(foto: Photo) {
+    // "híbrido" detectará Cordova ou Capacitor
+    if (this.platform.is('hybrid')) {
+      // Ler o arquivo no formato base64
+      const arquivo = await Filesystem.readFile({
+        path: foto.path as string,
+      });
+
+      return arquivo.data;
+    } else {
+      // Obtenha a foto, leia-a como um blob e, em seguida, converta-a para o formato base64
+      const resposta = await fetch(foto.webPath!);
+      const blob = await resposta.blob();
+
+      return (await this.convertBlobToBase64(blob)) as string;
+    }
+  }
+
+  // Excluir a imagem, removendo-a dos dados de referência e do sistema de arquivos
+  public async deletePicture(foto: Foto, posicao: number) {
+    // Remover essa foto da matriz de dados de referência Fotos
+    this.fotos.splice(posicao, 1);
+
+    // Atualizar o cache da matriz de fotos sobrescrevendo a matriz de fotos existente
+    Preferences.set({
+      key: this.FOTO_ARMAZENAMENTO,
+      value: JSON.stringify(this.fotos),
+    });
+
+    // excluir o arquivo de foto do sistema de arquivos
+    const nomeArquivo = foto.filepath.substr(foto.filepath.lastIndexOf('/') + 1);
+    await Filesystem.deleteFile({
+      path: nomeArquivo,
+      directory: Directory.Data,
+    });
+  }
+
+  convertBlobToBase64 = (blob: Blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        resolve(reader.result);
+      };
+      reader.readAsDataURL(blob);
+    });
+
+    async getBlob(foto: Foto) {
+      // Busca o arquivo no File System
+      const file = await this.readFile(foto);
+      // Converte o arquivo para Blob
+      const response = await fetch(file);
+      // Retorna o Blob
+      return await response.blob();
+    }
+  
+    private async readFile(foto: Foto) {
+      // If running on the web...
+      if (!this.platform.is('hybrid')) {
+        // Display the photo by reading into base64 format
+        const readFile = await Filesystem.readFile({
+          path: foto.filepath,
+          directory: Directory.Data,
+        });
+  
+        // Web platform only: Load the photo as base64 data
+        foto.webviewPath = `data:image/jpeg;base64,${readFile.data}`;
+      }
+  
+      return foto.webviewPath as string;
+    }
+
+
+}
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
+Em modal.page.ts
+
+import { Component, Input, OnInit } from '@angular/core';
+import { ModalController } from '@ionic/angular';
+
+@Component({
+  selector: 'app-modal',
+  templateUrl: './modal.page.html',
+  styleUrls: ['./modal.page.scss'],
+})
+export class ModalPage implements OnInit {
+
+  // Dados que vieram por parâmetro do componentProps
+  @Input() descricao: string = '';
+  @Input() confianca: string = '';
+  @Input() tags: string[] = [];
+  @Input() tipo: string = '';
+
+  constructor(public modalController: ModalController) { }
+
+  ngOnInit() {
+  }
+
+  async closeModal() {
+    await this.modalController.dismiss();
+  }
+
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+Em modal.page.html
+
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Dados da IA</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>{{ tipo === 'descrever' ? 'Descrição da Imagem' : 'Objetos na Imagem' }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content *ngIf="tipo === 'descrever'">
+      {{descricao}} <br>
+      <strong>Confiança: </strong>
+      <ion-badge class="direita">
+        {{confianca}}
+      </ion-badge>
+    </ion-card-content>
+
+    <ion-item *ngFor="let item of tags" lines="full">
+      <ion-label>{{item | titlecase}}</ion-label>
+    </ion-item>
+  </ion-card>
+
+</ion-content>
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+
+
